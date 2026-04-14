@@ -1,0 +1,38 @@
+name: Frontend Build and Test
+
+on:
+  push:
+    paths:
+      - "frontend/**"
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        run: docker build -t frontend-app .
+
+      - name: Run Container
+        run: docker run -d -p 8081:80 --name frontend-test frontend-app
+
+      - name: Verify Service
+        run: |
+
+          sleep 5
+
+          curl -s localhost:8081 | grep "Hello from the frontend!"
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f frontend-test
