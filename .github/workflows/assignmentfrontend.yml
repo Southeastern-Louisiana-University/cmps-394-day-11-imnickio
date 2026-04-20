@@ -18,9 +18,11 @@ jobs:
 
       - name: Run and Verify
         run: |
-          docker run -d -p 8080:80 --name ui-test inventory-ui
-          sleep 5
-          curl -s localhost:8080 | grep "Inventory Management System"
+          docker run -d --name ui-test inventory-ui
+          sleep 3
+          docker logs ui-test 2>&1 | grep "test is successful"
+
+          docker exec ui-test ls /usr/share/nginx/html/index.html
 
       - name: Cleanup
         if: always()

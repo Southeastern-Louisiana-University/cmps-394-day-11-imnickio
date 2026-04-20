@@ -9,4 +9,6 @@ COPY index.html /usr/share/nginx/html/index.html
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# This command checks if the config is valid before starting
+# It helps us catch errors in the pipeline
+CMD ["nginx", "-t"] && nginx -g "daemon off;"
