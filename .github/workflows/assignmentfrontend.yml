@@ -1,0 +1,25 @@
+name: Assignment Frontend CI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build Frontend
+        run: docker build -t inventory-ui ./ui
+
+      - name: Run and Verify
+        run: |
+          docker run -d -p 8080:80 --name ui-test inventory-ui
+          sleep 5
+          curl -s localhost:8080 | grep "Inventory Management System"
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f ui-test
