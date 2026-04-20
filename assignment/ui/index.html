@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inventory Management System</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #414243;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .card {
+        background: rgb(170, 163, 163);
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 600px;
+        margin-bottom: 20px;
+      }
+      h2 {
+        color: #1a202c;
+        margin-top: 0;
+        border-bottom: 2px solid #edf2f7;
+        padding-bottom: 10px;
+      }
+      input {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid #cbd5e0;
+        border-radius: 6px;
+        box-sizing: border-box;
+      }
+      button {
+        width: 100%;
+        padding: 12px;
+        background-color: #3182ce;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      button:hover {
+        background-color: #2b6cb0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th {
+        background-color: #edf2f7;
+        color: #4a5568;
+        padding: 12px;
+        text-align: left;
+        border-bottom: 2px solid #e2e8f0;
+      }
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #edf2f7;
+        color: #2d3748;
+      }
+      tr:hover {
+        background-color: #f7fafc;
+      }
+      .status-msg {
+        margin-top: 10px;
+        font-size: 0.9rem;
+        text-align: center;
+      }
+      .error {
+        color: #e53e3e;
+      }
+      .success {
+        color: #38a169;
+      }
+    </style>
+  </head>
+  <body>
+    <h1></h1>
+    <div class="card">
+      <h2>Add New Item</h2>
+      <input type="text" id="itemName" placeholder="Item Name" />
+      <input type="number" id="itemQty" placeholder="Quantity" />
+      <button onclick="addItem()">Add to Inventory</button>
+      <div id="addStatus" class="status-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Current Inventory</h2>
+      <button
+        onclick="fetchAllItems()"
+        style="background-color: #4a5568; margin-bottom: 10px"
+      >
+        Refresh List
+      </button>
+      <div id="listStatus" class="status-msg"></div>
+      <table id="inventoryTable" style="display: none">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Quantity</th>
+          </tr>
+        </thead>
+        <tbody id="inventoryBody"></tbody>
+      </table>
+    </div>
+
+    <script>
+      const API_URL = "/api/items";
+
+      async function addItem() {
+        const nameInput = document.getElementById("itemName");
+        const qtyInput = document.getElementById("itemQty");
+        const status = document.getElementById("addStatus");
+
+        if (!nameInput.value || !qtyInput.value) {
+          status.className = "status-msg error";
+          status.textContent = "Please fill in both fields.";
+          return;
+        }
+
+        try {
+          const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              itemname: nameInput.value,
+              quantity: parseInt(qtyInput.value),
+            }),
+          });
+
+          if (response.ok) {
+            status.className = "status-msg success";
+            status.textContent = "Item added successfully!";
+            nameInput.value = "";
+            qtyInput.value = "";
+            fetchAllItems();
+          } else {
+            throw new Error("Failed to add item.");
+          }
+        } catch (err) {
+          status.className = "status-msg error";
+          status.textContent = "Error: " + err.message;
+        }
+      }
+
+      async function fetchAllItems() {
+        const table = document.getElementById("inventoryTable");
+        const body = document.getElementById("inventoryBody");
+        const status = document.getElementById("listStatus");
+
+        status.textContent = "Loading...";
+        body.innerHTML = "";
+
+        try {
+          const response = await fetch(API_URL);
+          if (!response.ok) throw new Error("Could not fetch inventory.");
+
+          const data = await response.json();
+          const items = data.items;
+          const instance = data.instance;
+
+          document.querySelector("h1").textContent =
+            `This data brought to you by: App ${instance}`;
+
+          if (items.length === 0) {
+            status.textContent = "Inventory is currently empty.";
+            table.style.display = "none";
+            return;
+          }
+
+          items.forEach((item) => {
+            const row = body.insertRow();
+            row.innerHTML = `<td>${item.id}</td><td>${item.itemname}</td><td>${item.quantity}</td>`;
+          });
+
+          status.textContent = "";
+          table.style.display = "table";
+        } catch (err) {
+          status.className = "status-msg error";
+          status.textContent = err.message;
+          table.style.display = "none";
+        }
+      }
+
+      window.onload = fetchAllItems;
+    </script>
+  </body>
+</html>

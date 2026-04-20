@@ -1,0 +1,41 @@
+name: Assignment Frontend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "assignment/ui/**"
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build Frontend
+        run: docker build -t inventory-ui ./assignment/ui
+
+      - name: Verify Build
+        run: |
+          docker create --name ui-test inventory-ui
+
+          echo "Verifying index.html exists in the image..."
+          if docker cp ui-test:/usr/share/nginx/html/index.html - > /dev/null; then
+            echo "Success: index.html is present."
+          else
+            echo "Error: index.html missing!"
+            exit 1
+          fi
+
+          echo "Verifying nginx.conf was applied..."
+          if docker cp ui-test:/etc/nginx/conf.d/default.conf - | grep "upstream app"; then
+            echo "Success: Custom nginx.conf is present."
+          else
+            echo "Error: nginx.conf is missing or incorrect!"
+            exit 1
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f ui-test

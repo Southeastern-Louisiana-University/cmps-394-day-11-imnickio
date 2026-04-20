@@ -1,0 +1,34 @@
+name: Assignment Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "assignment/**"
+      - "!assignment/ui/**"
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build Backend
+        run: docker build -t inventory-backend ./assignment
+
+      - name: Run and Verify
+        run: |
+          docker run -d -p 8000:8000 --name api-test inventory-backend
+          sleep 8
+          RESPONSE=$(curl -s localhost:8000/items)
+          if [[ "$RESPONSE" == *"items"* ]]; then
+            echo "API is up and responding!"
+          else
+            echo "API failure: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f api-test
