@@ -16,15 +16,25 @@ jobs:
       - name: Build Frontend
         run: docker build -t inventory-ui ./assignment/ui
 
-      - name: Run and Verify
+      - name: Verify Build
         run: |
-          docker run -d --name ui-test inventory-ui
+          docker create --name ui-test inventory-ui
 
-          echo "Checking if index.html exists in the container..."
-          docker exec ui-test ls /usr/share/nginx/html/index.html
+          echo "Verifying index.html exists in the image..."
+          if docker cp ui-test:/usr/share/nginx/html/index.html - > /dev/null; then
+            echo "Success: index.html is present."
+          else
+            echo "Error: index.html missing!"
+            exit 1
+          fi
 
-          echo "Checking if nginx config was replaced..."
-          docker exec ui-test cat /etc/nginx/conf.d/default.conf | grep "upstream app"
+          echo "Verifying nginx.conf was applied..."
+          if docker cp ui-test:/etc/nginx/conf.d/default.conf - | grep "upstream app"; then
+            echo "Success: Custom nginx.conf is present."
+          else
+            echo "Error: nginx.conf is missing or incorrect!"
+            exit 1
+          fi
 
       - name: Cleanup
         if: always()
